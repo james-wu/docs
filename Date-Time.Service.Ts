@@ -5,6 +5,11 @@ import { SystemConstants } from '@core/system.constants';
   providedIn: 'root',
 })
 export class DateTimeService {
+  
+    static nzTimeZone = 'Pacific/Auckland';
+    static nzTimeFormat = 'dd/MM/yyyy h:mm a';
+    static locale = 'en-US';
+  
   public getLocalISOTime = (date: Date): string => {
     const timezoneOffset = date.getTimezoneOffset() * 60 * 1000;
     const localISOTime = new Date(
