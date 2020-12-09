@@ -36,18 +36,16 @@ namespace Ws2.UtilityTool.Controllers {
                 (IDictionary<string, object>) serializer.Deserialize(new JTokenReader(data),
                     typeof(IDictionary<string, object>));
 
+            var dictionary2 = (Dictionary<string, string>)serializer.Deserialize(new JTokenReader(data),
+                typeof(Dictionary<string, string>));
+
 
             var ruleObj = JObject.Parse(
                 System.IO.File.ReadAllText($"{path}\\Data\\rules.json"));
 
             var rule = (Rootobject) serializer.Deserialize(new JTokenReader(ruleObj), typeof(Rootobject));
 
-            //var discountFilter = "album => album.Quantity > 0";
-            //var options = ScriptOptions.Default.AddReferences(typeof(Album).Assembly);
-
-            //Func<Album, bool> discountFilterExpression = await CSharpScript.EvaluateAsync<Func<Album, bool>>(discountFilter, options);
-
-            //var discountedAlbums = albums.Where(discountFilterExpression);
+            
 
             var condition = "Context[\"FundedEFTS\"]";
 
@@ -137,7 +135,7 @@ namespace Ws2.UtilityTool.Controllers {
             //await EvaluateKeyValuePairAsync(dictionary);
 
             await EvaluateDictionaryAsync(dictionary);
-
+            await EvaluateAsync(dictionary2);
 
             return new string[] {"value1", "value2"};
         }
@@ -247,7 +245,47 @@ namespace Ws2.UtilityTool.Controllers {
                 throw;
             }
         }
+
+        private async Task EvaluateAsync(Dictionary<string, string> document) {
+            try {
+                var code = "dict => Ws2.UtilityTool.Controllers.ValuesController.IsNull(dict, \"ProvisionOptions.YearToDate\") || Ws2.UtilityTool.Controllers.ValuesController.AsDateTime(dict, \"LearnerStartDate\", \"dd/MM/yyyy\") < Ws2.UtilityTool.Controllers.ValuesController.AsDateTime(dict, \"ProvisionOptions.YearToDate\", \"dd/MM/yyyy\") ";
+                var options = ScriptOptions.Default
+                    .AddReferences(typeof(ValuesController).Assembly)
+                    .AddReferences(typeof(Dictionary<string, string>).Assembly);
+                Func<Dictionary<string, string>, bool> expression = await CSharpScript
+                    .EvaluateAsync<Func<Dictionary<string, string>, bool>>(code, options);
+
+                var result = expression(document);
+
+            }
+            catch (Exception e) {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        public static bool IsNull(Dictionary<string, string> dictionary, string key)
+        {
+            return dictionary[key] == null;
+        }
+
+        public static bool HasContent(Dictionary<string, string> document, string key) =>
+            document.ContainsKey(key) && document[key]?.Length > 0;
+
+        public static TType As<TType>(Dictionary<string, string> document, string key,
+            TType defaultValue = default(TType)) =>
+            HasContent(document, key) ? (TType)Convert.ChangeType(document[key], typeof(TType)) : defaultValue;
+
+        public static DateTime AsDateTime(Dictionary<string, string> document, string key, string format) =>
+            DateTime.ParseExact(document[key], format, null);
+
+        public static DateTimeOffset AsDateTimeOffset(Dictionary<string, string> document, string key, string format) =>
+            DateTimeOffset.ParseExact(document[key], format, null);
+
+
     }
+
+   
 
     public class Global {
         public IDictionary<string, object> Context { get; set; }
