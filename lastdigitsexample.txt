@@ -1,0 +1,12 @@
+ public string GetRequestId(string fileName) {
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+            var match = Regex.Match(fileNameWithoutExtension, @"-\d{6,}$");//matches the last 6 or many numbers with prefix -. e.g -123456
+            if (match.Success) {
+                var providerId = match.Value.Substring(1);
+
+                return providerId;
+            }
+
+            return null;
+        }
